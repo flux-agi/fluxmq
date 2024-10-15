@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"zenoh_node_1"
+	"github.com/flux-agi/fluxmq/fluxmq"
 )
 
 func main() {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"zenoh_node_1"
+	"github.com/flux-agi/fluxmq/fluxmq"
 )
 
 func main() {
