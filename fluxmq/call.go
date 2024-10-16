@@ -10,11 +10,11 @@ import (
 )
 
 // Call and wait response
-func (c *Connection) Call(_ context.Context, subj string, data []byte) (*Msg, error) {
-	resp, err := c.connection.Request(subj, data, time.Second)
+func (c *Connection) Call(_ context.Context, topic string, data []byte) (*Msg, error) {
+	resp, err := c.connection.Request(topic, data, time.Second)
 	if err != nil {
 		if errors.Is(err, nats.ErrNoResponders) {
-			return nil, fmt.Errorf("no responders for subj: %s", subj)
+			return nil, fmt.Errorf("no responders for topic: %s", topic)
 		}
 		return nil, err
 	}
