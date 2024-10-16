@@ -1,4 +1,4 @@
-package pkg
+package transport
 
 import "github.com/nats-io/nats.go"
 
