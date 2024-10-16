@@ -18,6 +18,7 @@ func main() {
 		if err := fef.Push("example/pub", []byte("big bo")); err != nil {
 			log.Fatal(err)
 		}
+
 		time.Sleep(250 * time.Millisecond)
 	}
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/flux-agi/fluxmq/fluxmq"
@@ -24,6 +23,8 @@ func main() {
 
 	for {
 		msg := <-ch
-		fmt.Printf("recv message: %s\n", msg.Payload)
+		if err := conn.Respond(&msg, []byte("resp")); err != nil {
+			log.Fatal(err)
+		}
 	}
 }

@@ -32,7 +32,7 @@ func (p *Subscriber) Recv(ctx context.Context) (chan Msg, error) {
 	var ch = make(chan Msg)
 	s, err := p.conn.Subscribe(p.topic, func(msg *nats.Msg) {
 		p.logger.Info("recv msg", slog.String("data", string(msg.Data)))
-		ch <- NewMsg(msg.Data)
+		ch <- newDomainMsg(msg)
 	})
 
 	go func() {
