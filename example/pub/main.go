@@ -1,23 +1,23 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"time"
 
 	"github.com/flux-agi/fluxmq/fluxmq"
 )
 
 func main() {
-	pub, err := fluxmq.CreatePub()
+	conn, err := fluxmq.Connect()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
+	fef, err := conn.CreatePub()
 	for {
-		if err := pub.Send("example-topic1", "hello"); err != nil {
-			panic(err)
+		if err := fef.Push("example/pub", []byte("big bo")); err != nil {
+			log.Fatal(err)
 		}
-		fmt.Println("send message")
 		time.Sleep(250 * time.Millisecond)
 	}
 }

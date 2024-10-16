@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/flux-agi/fluxmq/fluxmq"
 )
@@ -10,20 +11,19 @@ import (
 func main() {
 	ctx := context.Background()
 
-	sub, err := fluxmq.CreateSub("example_topic")
+	conn, err := fluxmq.Connect()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
-	dataCh, err := sub.Subscribe(ctx)
+	fef, err := conn.CreateSub("example/pub")
+	ch, err := fef.Recv(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	for {
-		select {
-		case data := <-dataCh:
-			fmt.Printf("receive message: %s\n", data)
-		}
+		msg := <-ch
+		fmt.Printf("recv message: %s\n", msg.Payload)
 	}
 }

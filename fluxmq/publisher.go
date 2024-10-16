@@ -1,44 +1,30 @@
 package fluxmq
 
 import (
-	"fmt"
-	"strings"
+	"log/slog"
 
-	zeromq "github.com/pebbe/zmq4"
+	"github.com/nats-io/nats.go"
 )
 
 // Publisher is publisher
 type Publisher struct {
-	socket *zeromq.Socket
+	conn   *nats.Conn
+	logger *slog.Logger
 }
 
 // CreatePub create new publisher
-func CreatePub() (*Publisher, error) {
-	socket, err := zeromq.NewSocket(zeromq.PUB)
-	if err != nil {
-		return nil, fmt.Errorf("cannot create socket: %s", err)
-	}
-
-	if err = socket.Bind(basePubAddr); err != nil {
-		return nil, fmt.Errorf("cannot bind socket to %s: %s", basePubAddr, err)
-	}
-
+func (c *Connection) CreatePub() (*Publisher, error) {
 	return &Publisher{
-		socket: socket,
+		conn:   c.connection,
+		logger: c.logger,
 	}, nil
 }
 
-// Send message to topic
-func (p *Publisher) Send(topic, message string) error {
-	if strings.Contains(topic, "/") ||
-		strings.Contains(topic, "_") {
-		return fmt.Errorf("invalid topic: %s; topic should not contain '/' or '_'", topic)
-	}
-	_, err := p.socket.Send(fmt.Sprintf("%s %s", topic, message), 0)
-	return err
-}
-
-// Close publisher
-func (p *Publisher) Close() error {
-	return p.socket.Close()
+// Push message to topic
+func (p *Publisher) Push(topic string, message []byte) error {
+	defer p.logger.Info("send message",
+		slog.String("topic", topic),
+		slog.String("message", string(message)),
+	)
+	return p.conn.Publish(topic, message)
 }
