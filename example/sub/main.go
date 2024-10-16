@@ -4,13 +4,13 @@ import (
 	"context"
 	"log"
 
-	"github.com/flux-agi/fluxmq/fluxmq"
+	"github.com/flux-agi/fluxmq/pkg"
 )
 
 func main() {
 	ctx := context.Background()
 
-	conn, err := fluxmq.Connect()
+	conn, err := pkg.Connect()
 	if err != nil {
 		log.Fatal(err)
 	}

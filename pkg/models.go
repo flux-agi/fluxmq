@@ -1,4 +1,4 @@
-package fluxmq
+package pkg
 
 import "github.com/nats-io/nats.go"
 
