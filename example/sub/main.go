@@ -4,13 +4,13 @@ import (
 	"context"
 	"log"
 
-	"github.com/flux-agi/fluxmq/transport"
+	"github.com/flux-agi/fluxmq/fluxmq"
 )
 
 func main() {
 	ctx := context.Background()
 
-	conn, err := transport.Connect()
+	conn, err := fluxmq.Connect()
 	if err != nil {
 		log.Fatal(err)
 	}

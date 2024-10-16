@@ -4,11 +4,11 @@ import (
 	"log"
 	"time"
 
-	"github.com/flux-agi/fluxmq/transport"
+	"github.com/flux-agi/fluxmq/fluxmq"
 )
 
 func main() {
-	conn, err := transport.Connect()
+	conn, err := fluxmq.Connect()
 	if err != nil {
 		log.Fatal(err)
 	}

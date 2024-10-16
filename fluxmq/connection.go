@@ -1,4 +1,4 @@
-package transport
+package fluxmq
 
 import (
 	"fmt"
