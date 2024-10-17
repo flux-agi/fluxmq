@@ -3,12 +3,14 @@ package fluxmq
 import (
 	"fmt"
 	"log/slog"
+	"sync"
 
 	"github.com/nats-io/nats.go"
 )
 
 // ConnectionOpt is connection option
 type ConnectionOpt func(*Connection)
+type ClientSubscription map[string]*nats.Subscription
 
 // Connection is connection
 type Connection struct {
@@ -16,6 +18,8 @@ type Connection struct {
 
 	host   string
 	logger *slog.Logger
+
+	subscriptions sync.Map
 }
 
 // Connect create new connection to fluxMQ
