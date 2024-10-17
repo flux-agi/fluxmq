@@ -13,9 +13,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fef, err := conn.CreatePub()
 	for {
-		if err := fef.Push("example/pub", []byte("big bo")); err != nil {
+		if err := conn.Push("example/pub", []byte("big bo")); err != nil {
 			log.Fatal(err)
 		}
 

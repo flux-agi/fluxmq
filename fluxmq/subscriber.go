@@ -8,54 +8,40 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// Subscriber is subscriber
-type Subscriber struct {
-	conn   *nats.Conn
-	logger *slog.Logger
-
-	topic string
-}
-
-// CreateSub create new subscriber
-func (c *Connection) CreateSub(topic string) (*Subscriber, error) {
-	return &Subscriber{
-		conn:   c.connection,
-		logger: c.logger,
-		topic:  topic,
-	}, nil
-}
-
-// Recv receive message.
+// Subscribe receive message.
 //
 // Сhan will close if ctx is Done, cancel it by "context.WithCancel()"
-func (p *Subscriber) Recv(ctx context.Context) (chan Msg, error) {
+func (c *Connection) Subscribe(ctx context.Context, topic string) (chan Msg, error) {
 	var ch = make(chan Msg)
-	s, err := p.conn.Subscribe(p.topic, func(msg *nats.Msg) {
-		p.logger.Info("recv msg", slog.String("data", string(msg.Data)))
+	s, err := c.connection.Subscribe(topic, func(msg *nats.Msg) {
+		c.logger.Info("recv msg", slog.String("data", string(msg.Data)))
 		ch <- newDomainMsg(msg)
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to subscribe to topic %s: %w", topic, err)
+	}
+
+	s.SetClosedHandler(func(subject string) {
+		c.logger.Info("subscriber closed", slog.String("subject", subject))
 	})
 
 	go func() {
 		defer func() {
 			close(ch)
-			p.logger.Info("closing subscriber channel",
-				slog.String("topic", p.topic),
+			c.logger.Info("closing subscriber channel",
+				slog.String("topic", topic),
 			)
 		}()
 
 		select {
 		case <-ctx.Done():
 			if err := s.Unsubscribe(); err != nil {
-				p.logger.Error("error unsubscribe",
-					slog.String("topic", p.topic),
+				c.logger.Error("error unsubscribe",
+					slog.String("topic", topic),
 					slog.Any("error", err),
 				)
 			}
 		}
 	}()
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to subscribe to %s: %w", p.topic, err)
-	}
 	return ch, nil
 }

@@ -15,8 +15,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fef, err := conn.CreateSub("example/pub")
-	ch, err := fef.Recv(ctx)
+	ch, err := conn.Subscribe(ctx, "example/pub")
 	if err != nil {
 		log.Fatal(err)
 	}
