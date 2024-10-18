@@ -22,6 +22,9 @@ func NewMsg(payload []byte) Msg {
 	return Msg{Payload: payload}
 }
 
+// GetTopic for message
+func (m *Msg) GetTopic() string { return m.msg.Subject }
+
 // Respond response for request
 func (m *Msg) Respond(data []byte) error {
 	return m.msg.Respond(data)
