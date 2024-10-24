@@ -1,6 +1,7 @@
 package fluxnode
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
@@ -10,14 +11,16 @@ import (
 type Node[Settings any] struct {
 	LifeCycle[Settings]
 
-	alias      string
 	logger     *slog.Logger
+	ctx        context.Context
+	alias      string
 	connection *fluxmq.Connection
 }
 
 // Create init flux service with settings
-func Create[Settings any](alias string, logger *slog.Logger) *Node[Settings] {
+func Create[Settings any](ctx context.Context, alias string, logger *slog.Logger) *Node[Settings] {
 	return &Node[Settings]{
+		ctx:    ctx,
 		alias:  alias,
 		logger: logger,
 	}
@@ -30,11 +33,23 @@ func (n *Node[T]) Run(connOpts ...fluxmq.ConnectionOpt) error {
 		return fmt.Errorf("connect to fluxmq server: %w", err)
 	}
 
+	if conn == nil {
+		return fmt.Errorf("connection is nil")
+	}
+
 	n.connection = conn
 
-	if err := n.onConnected(conn); err != nil {
-		n.logger.Error("onConnected err", slog.Any("err", err))
+	if n.onConnected != nil {
+		if err := n.onConnected(conn); err != nil {
+			return fmt.Errorf("onConnected: %w", err)
+		}
 	}
+
+	if err := n.requestConfig(); err != nil {
+		return fmt.Errorf("requestConfig: %w", err)
+	}
+
+	<-n.ctx.Done()
 
 	return nil
 }
