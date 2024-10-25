@@ -4,8 +4,20 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
+	"time"
 
 	"github.com/flux-agi/fluxmq/fluxmq"
+)
+
+type NodeStatus string
+
+const (
+	NodeStatusConnected NodeStatus = "CONNECTED"
+	NodeStatusReady     NodeStatus = "READY"
+	NodeStatusActive    NodeStatus = "ACTIVE"
+	NodeStatusPaused    NodeStatus = "PAUSED"
+	NodeStatusError     NodeStatus = "ERROR"
 )
 
 type Node[Settings any] struct {
@@ -15,6 +27,9 @@ type Node[Settings any] struct {
 	ctx        context.Context
 	alias      string
 	connection *fluxmq.Connection
+
+	nodeStatusLock sync.RWMutex
+	nodeStatus     NodeStatus
 }
 
 // Create init flux service with settings
@@ -49,8 +64,57 @@ func (n *Node[T]) Run(connOpts ...fluxmq.ConnectionOpt) error {
 		return fmt.Errorf("requestConfig: %w", err)
 	}
 
+	go func() {
+		topic := fmt.Sprintf(topicStatusRequest, n.alias)
+		ch, err := n.connection.Subscribe(n.ctx, topic)
+		if err != nil {
+			n.logger.Error("error for subscribe for req status")
+			return
+		}
+
+		for {
+			select {
+			case <-n.ctx.Done():
+				if err := n.connection.Unsubscribe(topicStatusRequest); err != nil {
+					n.logger.Error("error for unsubscribe for req status")
+				}
+				return
+			case <-ch:
+				n.logger.Info("recived status request")
+				for {
+					n.nodeStatusLock.RLock()
+					status := n.nodeStatus
+					n.nodeStatusLock.RUnlock()
+
+					if err := n.SetStatus(status); err != nil {
+						n.logger.Error("error setting node status")
+						time.Sleep(time.Second)
+						continue
+					}
+					break
+				}
+			}
+		}
+	}()
+
 	<-n.ctx.Done()
 
+	return nil
+}
+
+// SetStatus for send status to manager
+func (n *Node[T]) SetStatus(status NodeStatus) error {
+	{
+		n.nodeStatusLock.Lock()
+		defer n.nodeStatusLock.Unlock()
+
+		n.nodeStatus = status
+	}
+
+	topic := fmt.Sprintf(topicStatus, n.alias)
+	if err := n.connection.Push(topic, []byte(status)); err != nil {
+		return fmt.Errorf("push status: %w", err)
+	}
 	return nil
 }
 

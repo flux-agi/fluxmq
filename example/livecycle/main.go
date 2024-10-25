@@ -29,30 +29,40 @@ func main() {
 			for {
 				time.Sleep(time.Second)
 
-				readyTopic := fmt.Sprintf("flux.service.%s.ready", serviceAlias)
+				readyTopic := fmt.Sprintf("service/%s/set_config", serviceAlias)
 				dr, _ := json.Marshal(settings{})
 				if err := conn.Push(readyTopic, dr); err != nil {
 					slog.Error("readyTopic err", err)
 				}
+				time.Sleep(500 * time.Millisecond)
 
-				startTopic := fmt.Sprintf("flux.service.%s.start", serviceAlias)
+				startTopic := fmt.Sprintf("service/%s/start", serviceAlias)
 				if err := conn.Push(startTopic, nil); err != nil {
 					slog.Error("startTopic err", err)
 				}
+				time.Sleep(500 * time.Millisecond)
 
-				stopTopic := fmt.Sprintf("flux.service.%s.stop", serviceAlias)
+				stopTopic := fmt.Sprintf("service/%s/stop", serviceAlias)
 				if err := conn.Push(stopTopic, nil); err != nil {
 					slog.Error("stopTopic err", err)
 				}
+				time.Sleep(500 * time.Millisecond)
 
-				restartTopic := fmt.Sprintf("flux.service.%s.restart", serviceAlias)
+				restartTopic := fmt.Sprintf("service/%s/restart", serviceAlias)
 				if err := conn.Push(restartTopic, nil); err != nil {
 					slog.Error("restartTopic err", err)
 				}
+				time.Sleep(500 * time.Millisecond)
 
-				errTopic := fmt.Sprintf("flux.service.%s.error", serviceAlias)
+				errTopic := fmt.Sprintf("service/%s/error", serviceAlias)
 				if err := conn.Push(errTopic, nil); err != nil {
 					slog.Error("errTopic err", err)
+				}
+				time.Sleep(500 * time.Millisecond)
+
+				statusTopic := fmt.Sprintf("service/%s/request_status", serviceAlias)
+				if err := conn.Push(statusTopic, nil); err != nil {
+					slog.Error("statusTopic err", err)
 				}
 			}
 		}()

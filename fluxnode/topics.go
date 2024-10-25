@@ -1,11 +1,13 @@
 package fluxnode
 
 const (
-	topicRequestConfig = "flux.service.%s.request-config"
-	topicOnReady       = "flux.service.%s.ready"
-	topicOnStart       = "flux.service.%s.start"
-	topicOnStop        = "flux.service.%s.stop"
-	topicOnRestart     = "flux.service.%s.restart"
-	topicOnError       = "flux.service.%s.error"
-	topicOnTick        = "flux.service.%s.tick"
+	topicRequestConfig = "service/%s/get_config"
+	topicOnReady       = "service/%s/set_config"
+	topicOnStart       = "service/%s/start"
+	topicOnStop        = "service/%s/stop"
+	topicOnRestart     = "service/%s/restart"
+	topicOnError       = "service/%s/error"
+	topicOnTick        = "service/%s/tick"
+	topicStatus        = "service/%s/status"         // for push status
+	topicStatusRequest = "service/%s/request_status" // for request status
 )

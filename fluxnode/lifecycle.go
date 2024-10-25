@@ -27,11 +27,32 @@ type LifeCycle[T any] struct {
 }
 
 // OnConnected on connected event
-func (n *Node[T]) OnConnected(f OnConnectedFunc) { n.onConnected = f }
+func (n *Node[T]) OnConnected(f OnConnectedFunc) {
+	n.onConnected = func(conn *fluxmq.Connection) error {
+		if err := f(conn); err != nil {
+			return err
+		}
+
+		if err := n.SetStatus(NodeStatusConnected); err != nil {
+			return err
+		}
+		return nil
+	}
+}
 
 // OnReady on ready event
 func (n *Node[T]) OnReady(f OnReadyFunc[T]) {
-	n.onReady = f
+	n.onReady = func(settings T) error {
+		if err := f(settings); err != nil {
+			return err
+		}
+
+		if err := n.SetStatus(NodeStatusReady); err != nil {
+			return err
+		}
+
+		return nil
+	}
 
 	go func() {
 		if n.connection == nil {
@@ -97,7 +118,16 @@ func (n *Node[T]) OnTick(f OnTickFunc) {
 
 // OnStart on start event
 func (n *Node[T]) OnStart(f OnCommonFunc) {
-	n.onStart = f
+	n.onStart = func() error {
+		if err := f(); err != nil {
+			return err
+		}
+
+		if err := n.SetStatus(NodeStatusActive); err != nil {
+			return err
+		}
+		return nil
+	}
 
 	go func() {
 		if n.connection == nil {
@@ -137,7 +167,16 @@ func (n *Node[T]) OnStart(f OnCommonFunc) {
 
 // OnStop on stop event
 func (n *Node[T]) OnStop(f OnCommonFunc) {
-	n.onStop = f
+	n.onStop = func() error {
+		if err := f(); err != nil {
+			return err
+		}
+
+		if err := n.SetStatus(NodeStatusPaused); err != nil {
+			return err
+		}
+		return nil
+	}
 
 	go func() {
 		if n.connection == nil {
@@ -177,7 +216,21 @@ func (n *Node[T]) OnStop(f OnCommonFunc) {
 
 // OnRestart on restart event
 func (n *Node[T]) OnRestart(f OnCommonFunc) {
-	n.onRestart = f
+
+	n.onRestart = func() error {
+		if err := n.SetStatus(NodeStatusPaused); err != nil {
+			return err
+		}
+
+		if err := f(); err != nil {
+			return err
+		}
+
+		if err := n.SetStatus(NodeStatusActive); err != nil {
+			return err
+		}
+		return nil
+	}
 
 	go func() {
 		if n.connection == nil {
