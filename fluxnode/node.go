@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"sync"
 	"time"
 
@@ -33,7 +34,12 @@ type Node[Settings any] struct {
 }
 
 // Create init flux service with settings
-func Create[Settings any](ctx context.Context, alias string, logger *slog.Logger) *Node[Settings] {
+func Create[Settings any](ctx context.Context, logger *slog.Logger) *Node[Settings] {
+	alias, ok := os.LookupEnv("NODE_ALIAS")
+	if !ok {
+		panic("env: 'NODE_ALIAS' must be set")
+	}
+
 	return &Node[Settings]{
 		ctx:    ctx,
 		alias:  alias,
