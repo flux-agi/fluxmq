@@ -2,6 +2,7 @@ package fluxnode
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -34,9 +35,11 @@ type Node[Settings any] struct {
 	alias      string
 	connection *fluxmq.Connection
 
-	nodeStatusLock sync.RWMutex
+	nodeLock       sync.RWMutex
 	nodeStatus     NodeStatus
 	tickSettingsCh chan TickSettings
+
+	commonState []byte
 }
 
 // Create init flux service with settings
@@ -78,10 +81,17 @@ func (n *Node[T]) Run(connOpts ...fluxmq.ConnectionOpt) error {
 	}
 
 	go func() {
-		topic := fmt.Sprintf(topicStatusRequest, n.alias)
-		ch, err := n.connection.Subscribe(n.ctx, topic)
+		topicStatusReq := fmt.Sprintf(topicStatusRequest, n.alias)
+		statusReqCh, err := n.connection.Subscribe(n.ctx, topicStatusReq)
 		if err != nil {
 			n.logger.Error("error for subscribe for req status")
+			return
+		}
+
+		topicCommonStateReq := fmt.Sprintf(topicCommonState, n.alias)
+		topicCommonStateCh, err := n.connection.Subscribe(n.ctx, topicCommonStateReq)
+		if err != nil {
+			n.logger.Error("error for subscribe for req state")
 			return
 		}
 
@@ -92,15 +102,31 @@ func (n *Node[T]) Run(connOpts ...fluxmq.ConnectionOpt) error {
 					n.logger.Error("error for unsubscribe for req status")
 				}
 				return
-			case <-ch:
+			case <-statusReqCh:
 				n.logger.Info("recived status request")
 				for {
-					n.nodeStatusLock.RLock()
+					n.nodeLock.RLock()
 					status := n.nodeStatus
-					n.nodeStatusLock.RUnlock()
+					n.nodeLock.RUnlock()
 
 					if err := n.SetStatus(status); err != nil {
 						n.logger.Error("error setting node status")
+						time.Sleep(time.Second)
+						continue
+					}
+					break
+				}
+
+			case <-topicCommonStateCh:
+				n.logger.Info("recived common state request")
+				for {
+					n.nodeLock.RLock()
+					state := n.commonState
+					n.nodeLock.RUnlock()
+
+					t := fmt.Sprintf(topicPushCommonState, n.alias)
+					if err := n.connection.Push(t, state); err != nil {
+						n.logger.Error("error push node state")
 						time.Sleep(time.Second)
 						continue
 					}
@@ -118,8 +144,8 @@ func (n *Node[T]) Run(connOpts ...fluxmq.ConnectionOpt) error {
 // SetStatus for send status to manager
 func (n *Node[T]) SetStatus(status NodeStatus) error {
 	{
-		n.nodeStatusLock.Lock()
-		defer n.nodeStatusLock.Unlock()
+		n.nodeLock.Lock()
+		defer n.nodeLock.Unlock()
 
 		n.nodeStatus = status
 	}
@@ -129,6 +155,27 @@ func (n *Node[T]) SetStatus(status NodeStatus) error {
 		return fmt.Errorf("push status: %w", err)
 	}
 	return nil
+}
+
+// SetCommonState common state
+func (n *Node[T]) SetCommonState(state any) error {
+	data, err := json.Marshal(state)
+	if err != nil {
+		return fmt.Errorf("marshal common state: %w", err)
+	}
+
+	n.nodeLock.Lock()
+	defer n.nodeLock.Unlock()
+
+	n.commonState = data
+	return nil
+}
+
+// GetCommonState common state
+func (n *Node[T]) GetCommonState() []byte {
+	n.nodeLock.RLock()
+	defer n.nodeLock.RUnlock()
+	return n.commonState
 }
 
 // Alias of node
