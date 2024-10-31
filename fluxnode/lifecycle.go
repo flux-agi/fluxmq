@@ -100,17 +100,70 @@ func (n *Node[T]) OnReady(f OnReadyFunc[T]) {
 func (n *Node[T]) OnTick(f OnTickFunc) {
 	n.onTick = f
 
-	// TODO: need implement on nats subscribtions
 	go func() {
+		var (
+			data  TickSettings
+			timer = time.NewTimer(0)
+		)
+		defer timer.Stop()
+
+		resetTimer := func() {
+			if data.IsInfinity {
+				timer.Reset(0)
+				return
+			}
+			timer.Reset(data.Delay)
+		}
+
 		for {
 			select {
 			case <-n.ctx.Done():
 				return
-			default:
-				time.Sleep(250 * time.Millisecond)
-				if n.onTick != nil {
-					n.onTick(250*time.Millisecond, time.Now())
+
+			case d := <-n.tickSettingsCh:
+				data = d
+				resetTimer()
+
+			case <-timer.C:
+				n.onTick(data.Delay, time.Now())
+				resetTimer()
+			}
+		}
+	}()
+
+	go func() {
+		if n.connection == nil {
+			for {
+				time.Sleep(10 * time.Millisecond)
+				if n.onConnected != nil {
+					break
 				}
+			}
+		}
+
+		topic := topicOnTick
+		ch, err := n.connection.Subscribe(n.ctx, topic)
+		if err != nil {
+			n.logger.Error("cannot subscribe to topic", slog.String("topic", topic), slog.Any("error", err))
+			return
+		}
+		defer func() {
+			if err := n.connection.Unsubscribe(topic); err != nil {
+				n.logger.Error("cannot unsubscribe from topic", slog.String("topic", topic), slog.Any("error", err))
+			}
+		}()
+
+		for {
+			select {
+			case <-n.ctx.Done():
+				return
+			case msg := <-ch:
+				var d TickSettings
+				if err := json.Unmarshal(msg.Payload, &d); err != nil {
+					n.logger.Error("cannot unmarshal message", slog.Any("error", err))
+					continue
+				}
+				n.tickSettingsCh <- d
 			}
 		}
 	}()

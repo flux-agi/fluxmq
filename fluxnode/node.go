@@ -11,6 +11,11 @@ import (
 	"github.com/flux-agi/fluxmq/fluxmq"
 )
 
+type TickSettings struct {
+	IsInfinity bool          `json:"is_infinity"`
+	Delay      time.Duration `json:"delay"`
+}
+
 type NodeStatus string
 
 const (
@@ -31,6 +36,7 @@ type Node[Settings any] struct {
 
 	nodeStatusLock sync.RWMutex
 	nodeStatus     NodeStatus
+	tickSettingsCh chan TickSettings
 }
 
 // Create init flux service with settings
@@ -41,9 +47,10 @@ func Create[Settings any](ctx context.Context, logger *slog.Logger) *Node[Settin
 	}
 
 	return &Node[Settings]{
-		ctx:    ctx,
-		alias:  alias,
-		logger: logger,
+		ctx:            ctx,
+		alias:          alias,
+		logger:         logger,
+		tickSettingsCh: make(chan TickSettings),
 	}
 }
 
@@ -131,5 +138,6 @@ func (n *Node[S]) Alias() string {
 
 // Close connection of node
 func (n *Node[S]) Close() error {
+	close(n.tickSettingsCh)
 	return n.connection.Close()
 }

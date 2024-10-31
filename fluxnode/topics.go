@@ -7,7 +7,7 @@ const (
 	topicOnStop        = "service/%s/stop"
 	topicOnRestart     = "service/%s/restart"
 	topicOnError       = "service/%s/error"
-	topicOnTick        = "service/%s/tick"
+	topicOnTick        = "service/tick"
 	topicStatus        = "service/%s/status"         // for push status
 	topicStatusRequest = "service/%s/request_status" // for request status
 )
