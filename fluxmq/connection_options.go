@@ -18,8 +18,8 @@ func WithLogger(logger *slog.Logger) ConnectionOpt {
 	}
 }
 
-func WithNatsOptions(opts ...nats.Option) ConnectionOpt {
+func WithClientName(name string) ConnectionOpt {
 	return func(c *Connection) {
-		c.natsOptions = append(c.natsOptions, opts...)
+		c.natsOptions = append(c.natsOptions, nats.Name(name))
 	}
 }
