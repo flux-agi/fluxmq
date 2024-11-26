@@ -16,3 +16,9 @@ func WithLogger(logger *slog.Logger) ConnectionOpt {
 		c.logger = logger.WithGroup("fluxmq")
 	}
 }
+
+func WithClientName(name string) ConnectionOpt {
+	return func(c *Connection) {
+		c.clientName = name
+	}
+}

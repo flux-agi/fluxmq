@@ -16,7 +16,9 @@ type ClientSubscription map[string]*nats.Subscription
 type Connection struct {
 	connection *nats.Conn
 
-	host   string
+	clientName string
+	host       string
+
 	logger *slog.Logger
 
 	subscriptions sync.Map
@@ -31,7 +33,10 @@ func Connect(opts ...ConnectionOpt) (*Connection, error) {
 
 	setDefaultsIfNeeded(&c)
 
-	connection, err := nats.Connect(c.host)
+	connection, err := nats.Connect(
+		c.host,
+		nats.Name(c.clientName),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("cannot connect to %s: %s", c.host, err)
 	}
