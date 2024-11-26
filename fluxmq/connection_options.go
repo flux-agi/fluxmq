@@ -1,7 +1,6 @@
 package fluxmq
 
 import (
-	"github.com/nats-io/nats.go"
 	"log/slog"
 )
 
@@ -20,6 +19,6 @@ func WithLogger(logger *slog.Logger) ConnectionOpt {
 
 func WithClientName(name string) ConnectionOpt {
 	return func(c *Connection) {
-		c.natsOptions = append(c.natsOptions, nats.Name(name))
+		c.clientName = name
 	}
 }
